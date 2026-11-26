@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Finanças">
+  <title>Minhas Finanças</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="icon-btn" id="prevMonth" aria-label="Mês anterior">‹</button>
+    <h1 id="monthLabel">—</h1>
+    <button class="icon-btn" id="nextMonth" aria-label="Próximo mês">›</button>
+  </header>
+
+  <main>
+    <!-- Aviso de instalação (aparece no navegador, some quando o app está instalado) -->
+    <div class="install-tip card" id="installTip" hidden>
+      <button class="close" id="installClose" aria-label="Fechar">×</button>
+      <b>Instale o app no seu iPhone</b>
+      <p class="small">Toque em <b>Compartilhar</b> <span class="ios-share">⬆︎</span> na barra do Safari e depois em
+        <b>“Adicionar à Tela de Início”</b>. Assim ele abre como app e funciona sem internet.</p>
+    </div>
+
+    <!-- ===================== RESUMO ===================== -->
+    <section class="view active" id="view-resumo">
+      <div class="card balance">
+        <span class="muted">Saldo atual (o que já entrou − o que já foi pago)</span>
+        <strong id="saldoAtual">R$ 0,00</strong>
+        <div class="row">
+          <div><span class="muted">Total a pagar</span><b class="neg" id="totalPagar">R$ 0,00</b></div>
+          <div><span class="muted">A receber</span><b class="pos" id="totalReceber">R$ 0,00</b></div>
+        </div>
+        <div class="total muted">Saldo depois de quitar tudo: <b id="saldoQuitado">R$ 0,00</b></div>
+        <div class="total muted" id="quitacao"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Próximas contas</h2><span class="badge neg" id="atrasadasBadge" hidden></span></div>
+        <ul class="tx-list" id="proximas"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Este mês</h2>
+        <div class="stats">
+          <div><span class="muted">Entradas</span><b class="pos" id="recMes">R$ 0,00</b></div>
+          <div><span class="muted">Saídas</span><b class="neg" id="despMes">R$ 0,00</b></div>
+          <div><span class="muted">Saldo do mês</span><b id="saldoMes">R$ 0,00</b></div>
+          <div><span class="muted">Falta pagar no mês</span><b class="warn" id="pendMes">R$ 0,00</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Saídas por categoria</h2>
+        <div class="chart-wrap">
+          <svg id="donut" viewBox="0 0 42 42" width="140" height="140"></svg>
+          <ul class="legend" id="legend"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CALENDÁRIO ===================== -->
+    <section class="view" id="view-calendario">
+      <div class="card cal-card">
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend small muted">
+          <span><i class="lg in"></i>Entrada</span><span><i class="lg out"></i>Saída</span><span><i class="lg late"></i>Atrasada</span><span><i class="lg done"></i>Paga</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2 id="diaTitulo">—</h2><button class="btn small" id="addDia">+ Adicionar</button></div>
+        <ul class="tx-list" id="diaLista"></ul>
+      </div>
+    </section>
+
+    <!-- ===================== LANÇAMENTOS ===================== -->
+    <section class="view" id="view-lancamentos">
+      <input type="search" id="busca" class="search" placeholder="Buscar lançamento…">
+      <div class="chips" id="filtroTipo">
+        <button class="chip active" data-f="todos">Todos</button>
+        <button class="chip" data-f="receita">Entradas</button>
+        <button class="chip" data-f="despesa">Saídas</button>
+        <button class="chip" data-f="pendente">Pendentes</button>
+      </div>
+      <div id="listaLancamentos"></div>
+    </section>
+
+    <!-- ===================== INSIGHTS ===================== -->
+    <section class="view" id="view-insights">
+      <div class="proj-grid">
+        <div class="card proj">
+          <span class="muted small">Projeção do mês</span>
+          <b id="projMes">—</b>
+          <span class="small muted" id="projMesInfo"></span>
+        </div>
+        <div class="card proj">
+          <span class="muted small">Projeção do ano</span>
+          <b id="projAno">—</b>
+          <span class="small muted" id="projAnoInfo"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Entradas × Saídas</h2>
+          <div class="chips mini" id="periodo">
+            <button class="chip active" data-p="6">6 meses</button>
+            <button class="chip" data-p="12">1 ano</button>
+          </div>
+        </div>
+        <svg id="chartFluxo" class="line-chart" viewBox="0 0 340 190"></svg>
+        <div class="chart-legend small">
+          <span><i style="background:#4ade80"></i>Entradas</span>
+          <span><i style="background:#f87171"></i>Saídas</span>
+          <span><i style="background:#60a5fa"></i>Saldo acumulado</span>
+        </div>
+        <div class="chart-detail small" id="fluxoDetalhe">Toque no gráfico para ver os valores de cada mês.</div>
+      </div>
+
+      <div class="card">
+        <h2>Dívida restante</h2>
+        <p class="muted small">Quanto ainda falta pagar ao fim de cada mês, considerando as contas pendentes.</p>
+        <svg id="chartDivida" class="line-chart" viewBox="0 0 340 170"></svg>
+        <div class="chart-detail small" id="dividaDetalhe"></div>
+      </div>
+
+      <div class="card">
+        <h2>O que os números dizem <span class="muted small" id="insightsPeriodo"></span></h2>
+        <ul class="insights" id="insightsLista"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Limites de gasto por categoria</h2>
+        <p class="muted small">Toque em uma categoria para definir quanto quer gastar no máximo por mês.</p>
+        <ul class="budget-list" id="listaMetas"></ul>
+      </div>
+    </section>
+
+    <!-- ===================== AJUSTES ===================== -->
+    <section class="view" id="view-ajustes">
+      <div class="card">
+        <h2>Backup</h2>
+        <p class="muted small">Seus dados ficam só neste aparelho. Faça backup de vez em quando para não perder nada.</p>
+        <button class="btn" id="btnExport">Exportar backup (.json)</button>
+        <label class="btn secondary">Importar backup
+          <input type="file" id="fileImport" accept="application/json,.json" hidden>
+        </label>
+        <button class="btn secondary" id="btnCsv">Exportar planilha (.csv)</button>
+      </div>
+      <div class="card">
+        <h2>Categorias</h2>
+        <div class="chips" id="tipoCat">
+          <button class="chip active" data-t="despesa">Saídas</button>
+          <button class="chip" data-t="receita">Entradas</button>
+        </div>
+        <ul class="cat-list" id="listaCats"></ul>
+        <form id="formCat" class="inline-form">
+          <input id="novaCat" placeholder="Nova categoria" maxlength="30" required>
+          <button class="btn small">Adicionar</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Zona de perigo</h2>
+        <button class="btn danger" id="btnReset">Apagar todos os dados</button>
+      </div>
+      <p class="muted small center">Minhas Finanças · funciona 100% offline</p>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="Novo lançamento">+</button>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="resumo"><span>◎</span>Resumo</button>
+    <button class="tab" data-view="calendario"><span>▦</span>Calendário</button>
+    <button class="tab" data-view="lancamentos"><span>☰</span>Lançamentos</button>
+    <button class="tab" data-view="insights"><span>↗</span>Insights</button>
+    <button class="tab" data-view="ajustes"><span>⚙</span>Ajustes</button>
+  </nav>
+
+  <!-- ===================== MODAL LANÇAMENTO ===================== -->
+  <dialog id="dlgTx">
+    <form id="formTx" method="dialog">
+      <h2 id="dlgTitle">Novo lançamento</h2>
+      <div class="seg" id="segTipo">
+        <button type="button" class="seg-btn active" data-t="despesa">Saída</button>
+        <button type="button" class="seg-btn" data-t="receita">Entrada</button>
+      </div>
+      <label>Valor (R$)
+        <input id="txValor" inputmode="decimal" placeholder="0,00" required autocomplete="off">
+      </label>
+      <label>Descrição
+        <input id="txDesc" maxlength="60" placeholder="Ex.: Cartão Nubank, Empréstimo…" autocomplete="off">
+      </label>
+      <div class="two">
+        <label>Categoria
+          <select id="txCat"></select>
+        </label>
+        <label>Data / vencimento
+          <input id="txData" type="date" required>
+        </label>
+      </div>
+      <label id="lblRepetir">Repetir por quantos meses (parcelas / conta fixa)
+        <input id="txRepetir" type="number" min="1" max="120" value="1" inputmode="numeric">
+      </label>
+      <label class="check"><input type="checkbox" id="txPago"><span id="txPagoLbl">Já foi pago</span></label>
+      <div class="actions">
+        <button type="button" class="btn danger" id="btnExcluir" hidden>Excluir</button>
+        <button type="button" class="btn secondary" id="btnCancelar">Cancelar</button>
+        <button type="submit" class="btn" id="btnSalvar">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===================== MODAL META ===================== -->
+  <dialog id="dlgMeta">
+    <form id="formMeta" method="dialog">
+      <h2 id="metaTitle">Limite</h2>
+      <label>Limite mensal (R$) — deixe vazio para remover
+        <input id="metaValor" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </label>
+      <div class="actions">
+        <button type="button" class="btn secondary" id="metaCancelar">Cancelar</button>
+        <button type="submit" class="btn">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
